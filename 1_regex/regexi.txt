@@ -1,0 +1,145 @@
+Sta su regexi?
+- Mehanizam koji nam omogucava da opisemo sablon koji zelimo da prepoznamo
+
+Primer 1. [Bukvalno poklpanje - literal]
+
+~ dan
+
+Ovde treba obratiti paznju jer ce ovaj upit da prepozna bilo koje nalzanje niza 
+karaktera dan, bez obzira da li je dan rec za sebe ili u okviru neke druge reci
+
+Primer 2. [Alternacija]
+
+~ banana|banane
+
+Primer 3. [Grupisanje]
+
+~ banan(a|e)
+
+Primer 4. [Ponavljanja 0 ili 1 puta]
+
+~ izrazi?
+
+Zadatak 1. Prepoznaj sva ponavljanja izraza "regular expression" ukljucujuci i skracenice
+
+~ reg(ular expressions?|ex(ps?|es)?)/gm
+
+Primer 5. [Ponavljanje 0 ili vise puta]
+
+~ ab*
+
+Primer 6. [Ponavljanje barem 1 puta]
+
+~ ab+
+
+Primer 7. [Ponavljanje odredjen broj puta]
+
+~ {m, n} - od m do n puta
+~ ab{2,3}c - abbc, abbbc
+~ ab{,3}c - ac, abc, abbc, abbbc
+~ ab{2,}c - abbc, ab...bc
+~ ab{2}c - abbc
+
+Primer 8. [Intervali]
+
+[abcd...]
+[a-z]
+[0-9]
+[a-zA-Z]+ sve reci (i smislene i besmislene)
+
+Primer 9. [Operator .]
+
+~ . oznacava sve osim \n
+
+Primer 10. [Escape sekvenca]
+
+~  \ stavljamo pre rezervisanih karaktera
+
+Zadatak 2. Opisati cele brojeve
+
+~ [-+]?[1-9][0-9]()
+
+Zadatak 3. Opisati realne brojeve
+
+~ [-+]?[0-9]+\.?([0-9]*((e|E)[-+]?[0-9]+)?)?/gm
+
+Primer 11. [Negirana klasa teksta ]
+
+~ [^] - sve osim onoga sto je u klasi
+
+Primer 12. [Nepohlepna * i +]
+
+~ +? ili *?
+
+Primer 13. [Back referenca]
+
+~ (neka grupa)(.*?) \redni broj grupe
+
+Zadatak 4. Prepoznati html tegove
+
+~ <([a-zA-Z ]+[^>]*)> .*? <\/\1>
+
+Primer 14. [Sidra]
+
+^ - na pocetku reda
+$ - na kraju reda
+
+Primer 15. [Beline]
+
+ rec\b oznacava da je nasa rec sufiks
+ \brec oznacava da je nasa rec prefiks
+ \brec\b oznacava da hocemo da prepoznamo samu rec
+ Primetimo da ovo resava problem iz primera 1
+
+Primer 16. [Unapred definisane klase]
+
+\d - cifre
+\w - reci
+\s - beline 
+\D - sve sto nije cifra
+\W - sve sto nije rec
+\S - sve sto nije belina
+
+Primer 17. [Preduvidi - look ahead] (NE PREPOZNAJE TEKST, SAMO RADE TESTIRANJA)
+17.1. Pozitivni preduvidi (?=)
+    matematika t(?=i) proverava da li se i nalazi iza t
+17.2. Negativni preduvidi (?!)
+    matematika t(!=i) proverava da li se i ne nalazi iza t
+Ovo se cesto koristi kad pravimo nalog - kompjuter na ovaj nacin proverava ispravnos usernama
+
+Zadatak 5. Opisati sifru koja sadrzi
+  1) bar 8 karaktera
+  2) bar 1 veliko slovo
+  3) bar 1 malo slovo
+  4) bar 1 cifru
+  5) bar jedan spec. karakter
+
+~ (?=.*[A-Z]+)(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*()_.]).{8,}
+
+Primer 18. [Postuvid - look behind]
+18.1. Pozitivni postuvidi
+    matematika (?<=k)a - proverava da li je a iza k
+18.2. Negativni postuvidi
+    matematika (?<!k)a - proverava da li a nije iza k
+
+
+Zadatak 6. Prepoznati validne email adrese
+Treba da prepoznamo razlicite oblike npr:
+    neka@gmail.com
+    neko.nesto@nesto.info
+    neko-nesto@alas.matf.bg.ac.rs
+
+~ [\w-\.]+@([\w-]+\.)+[\w-]{2,4}
+
+DOMACI:
+1. Opisati datume regexom
+
+~ TODO
+
+2. Opisati alas naloge regeksom
+
+~ m[ilvrnm][012][0-9][0-9]{1,4}@alas.matf.bg.ac.rs\b
+
+3. Opisati stringove u C-u
+
+~ "(?:\\.|[^"\\])*"
