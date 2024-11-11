@@ -134,12 +134,26 @@ Treba da prepoznamo razlicite oblike npr:
 DOMACI:
 1. Opisati datume regexom
 
+Regexom ne mozemo ispitati da li je godina prestupna, vec samo format
+Pretpostavimo datum dd/mm/yyyy
+
+~ (0[1-9]|[12][0-9]|3[01])([./-])(0[1-9]1[0-2])\2(19[0-9][0-9]|20[0-5][0-9])
+Ovo je lako ali ne radi posto ne uzima u obzir broj dana u mesecu
+
 ~ TODO
 
 2. Opisati alas naloge regeksom
 
-~ m[ilvrnm][012][0-9][0-9]{1,4}@alas.matf.bg.ac.rs\b
+~ \b(m[ilvrnma]|a[aif])[012][0-9][0-9]{1,4}@alas.matf.bg.ac.rs\b
 
 3. Opisati stringove u C-u
 
-~ "(?:\\.|[^"\\])*"
+~ "([^\"]|\\.)*"
+
+4. Regexom opisati makroe u C-u
+
+~ ^\s*#.*$
+
+5. Regexom opisati jednolinijskim komentarenu C-u
+
+! //.*$

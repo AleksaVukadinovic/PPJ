@@ -1,0 +1,20 @@
+grep je bas mator i ne podrzava vecinu izraza koje smo radili
+egrep je novija verzija koju koristimo umesto grepa
+
+sintaksa:
+egrep -opcija 'regex' fajl
+
+opcije:
+-i ignore case
+-c prebroj poklapanja
+-n numerisi
+-v prikaze sve linije koji se nisu poklopile
+
+sed je kao find & replace ali ne menja originalni fajl
+
+sintaksa:
+sed -r "s/ / /g" fajl
+s substitute
+g global
+/ separator
+izmedju / pisemo dva regexa 
