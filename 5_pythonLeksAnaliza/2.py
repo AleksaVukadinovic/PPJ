@@ -1,0 +1,1 @@
+# isti kurac kao i 1.py samo sto umesto tv su vozila

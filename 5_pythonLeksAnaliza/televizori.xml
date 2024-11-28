@@ -1,0 +1,18 @@
+<televizor id="1 ">
+    <rmarka>Sony</rmarka>
+    <model>KD49XF7077SAEP</model>
+    <godina>2018</godina>
+    <diag>49</diag>
+    <kolicina>5</kolicina>
+    <panel>VA-UHD</panel>
+    <cena>64999</cena>
+</televizor>
+<televizor id="2">
+    <godina>2019</godina>
+    <diag>55</diag>
+    <panel>IPS-UHD</panel>
+    <rmarka>LG</rmarka>
+    <model>55SM8200</model>
+    <cena>103999</cena>
+    <kolicina>10</kolicina>
+</televizor>
