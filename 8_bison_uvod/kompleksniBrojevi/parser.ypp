@@ -1,0 +1,313 @@
+%{
+    #include <iostream>
+    #include <cstdlib>
+    #include <map>
+    #include "KompleksniBroj.hpp"
+
+    /* linkujemo leksicki analizator */
+    extern int yylex();
+
+    void yyerror(std::string s) {
+
+        std::cerr << "Sintaksna greska: "
+            << s << std::endl;
+        exit(EXIT_FAILURE);
+    }  
+
+    // tablica simbola
+    std::map<std::string, KompleksniBroj*> promenljive;  
+%}
+
+/* definisemo moguce tipove podataka za tokene i neterminale
+ * primetite da su u uniji pokazivaci na klasne tipove.
+ */
+%union {
+    double v;
+    bool b;
+    std::string* s;
+    KompleksniBroj* kb;
+}
+
+/* definisemo prioritete operatore */
+%left '+' '-'
+%left '*' '/'
+%right UMINUS
+%right '~'
+
+/* definisemo tokene i pridruzujemo im tipove podataka */
+%token DEF_T PRINT_T EQ NEQ
+%token ARG_T MOD_T RE_T IM_T
+%token<v> BROJ
+%token<s> ID
+
+/* pridruzujemo tipove podataka neterminalima */
+%type<b> logicka_naredba
+%type<kb> kompleksni_broj izraz
+%type<v> broj
+
+/* proglasavamo startni simbol */
+%start program
+
+%%
+
+/* program je niz naredbi */
+program: naredba program
+    | naredba
+    ;
+/* kao u proslom zadatku, naredbe delimo po tipovima rezultata
+ * 1. dodele
+ * 2. stampanje vrednosti izraza
+ * 3. logicke naredbe
+ */
+naredba: DEF_T ID ';'   {
+                            /* proveravamo da li vec postoji promenljiva sa istim imenom
+                             * u tablici simbola
+                             */
+                            auto it = promenljive.find(*$2);
+                            /* ako postoji, prekidamo program */
+                            if (it != promenljive.end())
+                                yyerror("Promenljiva je vec definisana");
+
+                            /* u listu simbola dodajemo 0 kompleksni broj 
+                             * objekat kreiramo na hipu, a string kopiramo po vrednosti
+                             */
+                            promenljive[*$2] = new KompleksniBroj(0,0);
+                            /* unistavamo string koji je kreirao lekser */
+                            delete $2;
+                        }
+    | DEF_T ID '=' izraz ';' {
+                                /* proveravamo da li vec postoji promenljiva sa istim imenom
+                                 * u tablici simbola
+                                 */
+                                auto it = promenljive.find(*$2);
+                                /* ako postoji, prekidamo program */
+                                if (it != promenljive.end())
+                                    yyerror("Promenljiva je vec definisana");
+
+                                /* u listu simbola dodajemo kompleksni broj 
+                                 * sa hipa na koji pokazuje izraz, a string kopiramo po vrednosti
+                                 */
+                                promenljive[*$2] = $4;
+                                /* unistavamo string koji je kreirao lekser */
+                                delete $2;
+                            }
+    | ID '=' izraz ';'      {
+                                /* pronalazimo promenljivu u tablici simbola */
+                                auto it = promenljive.find(*$1);
+                                /* ako promenljiva ne postoji, prekidamo program */
+                                if (it == promenljive.end())
+                                    yyerror("Promenljiva nije definisana");
+
+                                /* unistavamo objekat ciji je pokazivac dodeljen promenljivoj 
+                                 * ako preskocimo ovaj korak, dolazi do curenja memorije
+                                 */
+                                delete it->second;
+                                /* promenljivoj dodeljujemo pokazivac novog objekta */
+                                it->second = $3;
+                                /* unistavamo string koji je kreirao lekser */
+                                delete $1;
+                            }
+    | PRINT_T '(' izraz ')' ';' {
+                                    /* stampamo vrednost kompleksnog broja
+                                     * operator << smo naucili kako da stampa kompleksne brojeve,
+                                     * a ne pokazivace na iste, pa zbog toga prvo derefenciramo
+                                     * pokazivac
+                                     */
+                                    std::cout << (*$3) << std::endl; 
+                                    /* unistavamo kompleksni broj, jer nam vise ne treba */
+                                    delete $3;
+                                }
+    | logicka_naredba ';'       {    
+                                    /* stampamo rezultat poredjenja */
+                                    std::cout << ($1 ? "True" : "False") << std::endl;
+                                    /* logicka promenljiva je prost tip, pa nemamo sta da 
+                                     * unistavamo/oslodjamo
+                                     */
+                                }
+    ;
+logicka_naredba: izraz EQ izraz     {
+                                        /* rezultat treba da bude rezultat poredjenja kompleksnih brojeva
+                                         * izraz je pokazivac na kompleksni broj, pa pre poredjenja
+                                         * prvo moramo da ih dereferenciramo
+                                         */
+                                        $$ = *$1 == *$3; 
+                                        /* nakon uporedjivanja, unistavamo objekte, 
+                                         * jer nam vise ne trebaju 
+                                         */
+                                        delete $1; delete $3;
+                                    }
+    | izraz NEQ izraz               {
+                                        /* rezultat treba da bude rezultat poredjenja kompleksnih brojeva
+                                         * izraz je pokazivac na kompleksni broj, pa pre poredjenja
+                                         * prvo moramo da ih dereferenciramo
+                                         */
+                                        $$ = *$1 != *$3; 
+                                        /* nakon uporedjivanja, unistavamo objekte, 
+                                         * jer nam vise ne trebaju 
+                                         */
+                                        delete $1; delete $3;
+                                    }
+    ;
+izraz: izraz '+' izraz  {
+                            /* rezultat operatora sabiranja je novi kompleksnih broj na hipu,
+                             * tj. pokazivac na isti
+                             * operator + ume da sabere kompleksne brojeve, ali je izraz pokazivac
+                             * na kompleksni broj. da bi ih sabrali, prvo ih moramo dereferencirati
+                             */
+                            $$ = *$1 + *$3; 
+                            /* nakon uporedjivanja, unistavamo objekte, 
+                             * jer nam vise ne trebaju. rezultat sabiranja
+                             * je novi objekat, pa nam operandi zaista vise ne trebaju
+                             */
+                            delete $1; delete $3;
+
+                            /* potpuno isto razmisljanje je i za -,*,/ */
+                        }
+    | izraz '-' izraz   {$$ = *$1 - *$3; delete $1; delete $3;}
+    | izraz '*' izraz   {$$ = *$1 * *$3; delete $1; delete $3;}
+    | izraz '/' izraz   {$$ = *$1 / *$3; delete $1; delete $3;}
+    | '(' izraz ')'     { 
+                            /* s obzirom da ovde nema nikakve specijalne operacije
+                             * dovoljno je da samo prekopiramo pokazivac 
+                             */
+                            $$ = $2; 
+                            /* ovde ne smemo da unistimo objekat $2, jer bi onda 
+                             * pokazivac $$ pokazivao na nesto sto vise ne postoji
+                             * i to bi bio segfault u programu.
+                             */
+                        }
+    | '-' izraz %prec UMINUS { 
+                                /* unarni minus mozemo da primenimo na kompleksni broj, 
+                                 * pa zato prvo moramo da dereferenciramo $2
+                                 * Rezultat izvrsavanja je novi kompleksni broj koji se prenosi
+                                 * po vrednosti. Zbog toga moramo da ga sacuvamo u lokalnoj promenljivoj
+                                 */
+                                KompleksniBroj rez = -(*$2);
+                                /* na osnovu rezultata moramo da napravimo novu vrednost na hipu,
+                                 * tj. da kreiramo novi objekat, koji cemo dodeliti rezultatu 
+                                 * akcije
+                                 */
+                                $$ = new KompleksniBroj(rez.Re(), rez.Im()); 
+                                /* unistavamo objekat, jer nam vise ne treba */
+                                delete $2; 
+                                /* BITNO:
+                                 * ni slucajno ne smete rezultatu $$ da dodelite adresu lokalne promenljive,
+                                 * jer nakon zavrsetka ovog bloka, taj pokazivac pokazivati na nesto sto ne postoji
+                                 * pokazivac $$ mora pokazivati na nesto sto je na hipu.
+                                 */
+                            }
+    | '~' izraz             { 
+                                /* konjugovanje mozemo da primenimo na kompleksni broj, 
+                                 * pa zato prvo moramo da dereferenciramo $2
+                                 * Rezultat izvrsavanja je novi kompleksni broj koji se prenosi
+                                 * po vrednosti. Zbog toga moramo da ga sacuvamo u lokalnoj promenljivoj
+                                 */
+                                KompleksniBroj rez = ~(*$2);
+                                /* na osnovu rezultata moramo da napravimo novu vrednost na hipu,
+                                 * tj. da kreiramo novi objekat, koji cemo dodeliti rezultatu 
+                                 * akcije
+                                 */
+                                $$ = new KompleksniBroj(rez.Re(), rez.Im()); 
+                                /* unistavamo objekat, jer nam vise ne treba */
+                                delete $2; 
+                                /* BITNO:
+                                 * ni slucajno ne smete rezultatu $$ da dodelite adresu lokalne promenljive,
+                                 * jer nakon zavrsetka ovog bloka, taj pokazivac pokazivati na nesto sto ne postoji
+                                 * pokazivac $$ mora pokazivati na nesto sto je na hipu.
+                                 */
+                            }
+    | ID                    {
+                                /* trazimo promenljivu u tablici simbola */
+                                auto it = promenljive.find(*$1);
+                                /* ako promenljiva ne postoji, prijavljujemo gresku */
+                                if (it == promenljive.end())
+                                    yyerror("Promenljiva nije definisana");
+
+                                /* kao rezultat, postavljamo kopiju promenljive iz tablice 
+                                 * simbola. razlog zasto kreiramo kopiju i ne koristimo originalnu
+                                 * promenljivu krije se u tome da ne tokom izracunavanja izraza
+                                 * ne smemo da promenimo vrednost u tablici.
+                                 */
+                                $$ = new KompleksniBroj(
+                                        it->second->Re(),
+                                        it->second->Im()
+                                );
+                                /* iteratori su pokazivaci, pa je zato pristup poljima ovakav */
+
+                                /* unistavamo string koji je alocirao lekser */
+                                delete $1;
+                            }
+    | BROJ                  { 
+                                /* skalari su takodje kompleksni brojevi */
+                                $$ = new KompleksniBroj($1);
+                            }
+    | kompleksni_broj       {   
+                                /* kad vec imamo kompleksni broj, dovoljno
+                                 * je samo da prosledimo pokazivac
+                                 */
+                                $$ = $1;
+                            }
+    | RE_T '(' izraz ')'    {
+                                /* pamtimo rezultat */
+                                double rez = $3->Re();
+                                /* kreiramo kompleksni broj */
+                                $$ = new KompleksniBroj(rez);
+                                /* unistavamo objekat, jer nam vise ne treba */
+                                delete $3;
+
+                                /* isti slucaj je i sa operacijama IM_T, ARG_T, MOD_T */
+                            }
+    | IM_T '(' izraz ')'    {
+                                double rez = $3->Im();
+                                $$ = new KompleksniBroj(rez);
+                                delete $3;
+                            }
+    | ARG_T '(' izraz ')'   {
+                                double rez = $3->Arg();
+                                $$ = new KompleksniBroj(rez);
+                                delete $3;
+                            }
+    | MOD_T '(' izraz ')'   {
+                                double rez = $3->Moduo();
+                                $$ = new KompleksniBroj(rez);
+                                delete $3;
+                            }
+    ;
+kompleksni_broj: '<' broj ',' broj '>'  { 
+                                            /* kreiramo novi kompleksni broj */
+                                            $$ = new KompleksniBroj($2, $4);
+                                        }
+    | '<' broj '>'                      { 
+                                            /* kreiramo novi kompleksni broj */
+                                            $$ = new KompleksniBroj($2); 
+                                        }
+    ;
+/* brojeve uvek prepoznajemo kao neoznacene i onda ih odgovarajucim 
+ * neterminalima prevodimo u negativne
+ */
+broj: BROJ      {   $$ = $1;    }
+    | '-' BROJ  {   $$ = -$2;   }
+    ;
+
+%%
+
+/* implementacija glavnog programa */
+int main() {
+
+    /* pokrecemo parsiranje */
+    if (yyparse() == 0) {
+
+        std::cout << "Sve ok" << std::endl;
+    }
+    else {
+
+        std::cout << "Sintaksna greska" << std::endl;
+    }
+
+    /* unistavamo objekte iz tablice simbola koji su na hipu  */
+    for (auto it = promenljive.begin(); it != promenljive.end(); it++) {
+        delete it->second;
+    }
+
+    return 0;
+}

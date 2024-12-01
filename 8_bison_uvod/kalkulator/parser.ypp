@@ -1,0 +1,256 @@
+/* Kao i u slucaju flex dokumenata i bison dokument je podeljen u tri celine
+ * pomocu karakterima parova karaktera %% %%
+ * 
+ * Prvi deo dokumenta cini C++ kod koji se direktno kopira u rezultutjuci
+ * potisni automat na C++. Drugi deo dokumenta cini spisak gramatickih pravila i 
+ * njima pridruzenih akcija. Treci deo dokumenta sadrzi implementaciju main funkcije
+ * i drugih neophodnih funkcija
+ *
+ * Potisni automat generisemo komandom
+ * bison -d -v parser.ypp
+ *
+ * i njen rezultat su dva fajla:
+ * parser.tab.cpp i parser.tab.hpp
+ */
+
+%{
+    /* isto kao u flex-u u okviru %{ %} bloka
+     * navodimo deo C++ koda koji se direktno kopira u 
+     * rezultujuci parser.tab.cpp dokument
+     */
+
+    /* ukljucujemo neophodna zaglavlja */
+    #include <iostream>
+    #include <cstdlib>
+    #include <map>
+
+    /* navodimo potpis yylex() funkcije, tj. sintaksnog analizatora na zahtev
+     * koji je rezultat opisa u dokumentu lexer.l
+     */
+    extern int yylex();    
+
+    /* moramo da implementiramo funkciju za obradu gresaka */
+    void yyerror(std::string s) {
+
+        std::cerr << "Sintaksna greska:"
+            << s << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    /* kreiramo tabelu simbola (promenljivih) kao mapu u nasem programu 
+     * kao kljuc koristimo ime promenljive, a kao pridruzenu vrednost koristimo double (prost tip)
+     * (u slucaju klasnih tipova, cuvali bismo pokazivac na objekat)
+     */
+    std::map<std::string, double> promenljive;
+
+    /* u programima nigde ne navodimo 
+     * using namespace std;
+     *
+     * jer dovodi do problema prilikom linkovanja sa lexerom, ako ne poredjate 
+     * include naredbe na odgovarajuci nacin. da se ne bismo zamajavali sa time,
+     * using namespace std necemo koristiti.
+     */
+%}
+
+/* definisemo prioritete operatora
+ * pri definiciji prioriteta operatora moramo da navedemo njihovu
+ * asocijativnost (left, right, nonassoc) i same operatore
+ *
+ * Operatori u istoj liniji su istog prioriteta. Operatori u liniji sa vecim
+ * brojem su viseg prioriteta. Dakle, UMINUS je viseg prioriteta od * i /, koji su
+ * viseg prioriteta od + i -.
+ */
+%left '+' '-'
+%left '*' '/'
+/* UMINUS je samo novo ime kojim se definise operator koji je desno asocijativan
+ * i viseg prioriteta od *,/,+,-
+ * Naziv je moga biti bilo koji. Razlog zasto smo ga uveli, krije se u tome sto ne
+ * mozemo imati jedan isti simbol (-) za dva operatora razlicitih asocijativnosti
+ * i prioriteta (unarni minus x = -y, binarni minus x = y - z;). Zbog toga moramo da
+ * uvedemo novo ime da bismo mogli da razlikujemo ova dva minusa u gramatici
+ */
+%right UMINUS
+
+/* Pomocu unije definisemo moguce tipove podataka koje mogu uzimati tokeni
+ * i neterminali u gramatici.
+ *
+ * BITNO:
+ * u okviru unije ne smeju biti podaci promenljive velicine (stringovi, vektori, klase
+ * koje mi pisemo, a sadrze objekte promenljive velicine itd). da bismo to zaobisli u 
+ * parserima koji koriste objekte za predstavljanje tipova uvek cemo u uniji cuvati
+ * pokazivace na te tipove, a same promenljive cemo uvek cuvati na hipu kao dinamicki 
+ * alocirane
+ */
+%union {
+    double v;
+    bool b;
+    std::string* s;
+}
+
+/* definisemo tokene u nasoj gramatici */
+%token PRINT_T EQ NEQ LEQ GEQ
+/* ukoliko treba da pridruzimo tip podataka, tj. vrednost nasem tokenu to 
+ * radimo na sledeci nacin:
+ *
+ * %token<naziv promenljive iz unije ciji tip odgovara tipu vrednosti tokena> lista tokena tog tipa
+ */
+%token<v> BROJ
+%token<s> ID
+
+/* definisani tokeni se direktno kopiraju u fajl parser.tab.hpp, pa je potrebno da taj fajl
+ * ukljucimo u lexer.l da bismo mogli da vrsimo tokenizaciju ulaza na ispravan nacin
+ */
+
+/* kao i tokeni, neterminali takodje mogu imati tipove
+ * u tom slucaju koristimo komandu %type na sledeci nacin
+ */
+%type<v> izraz
+%type<b> logicka_naredba
+
+/* proglasavamo startni simbol u gramatici */
+%start program
+
+/* u drugom delu dokumenta pisemo gramatiku i pridruzujemo joj akcije (slicno kao kod flex-a)
+ * Gramaticko pravilo u opstem slucaju ima sledeci oblik:
+ * 
+ * neterminal: pravilo1         {akcije za pravilo1}
+ *          | pravilo2          {akcije za pravilo2}
+ *          | pravilo3          {akcije za pravilo3}
+ *          ...
+ *          | praviloN          {akcije za praviloN}
+ *          ;
+ * 
+ * Isto kao kod flex-a, akcija pridruzena pravilo mora pocinjati u istom redu u kojem je pravilo.
+ * 
+ * Bison je bottom-up parser, sto znaci da tokom izvodjenja u gramatici desnu stranu pravila, zamenjuje
+ * njegovom levom stranom. Ovaj pristup se direktno prenosi i na izracunavanje. Preciznije ako u gramatici
+ * imamo pravilo:
+ *
+ * izraz : izraz '+' izraz
+ * 
+ * jasno je da tokom izvodjenja zbir sa desne strane pravila nakon izracunavanja treba dodeliti vrednosti sa 
+ * leve strane, sto je rezultat izracunavanja. 
+ *
+ * Da bismo to uradili, potrebno je da pravilu dodelimo odgovarajucu akciju. S obzirom da smo neterminalima dodelili
+ * tipove podataka, tj. vrednosti, mozemo ih posmatrati kao promenljive u akcijama. Bison nam u tome pomaze tako
+ * sto neterminalima redom dodeljuje sledece promenljive:
+ * pravilo sa leve strane (rezultat) se naziva $$
+ * pravila sa desne strane se redom numerisu sa $1, $2, $3, ..., $n
+ * 
+ * Dakle, numeracija u pravilu iz primera bice
+ * izraz : izraz  '+'  izraz
+ * $$       $1    $2   $3
+ *
+ * pa pridruzena akcija ima sledeci oblik
+ * izraz : izraz  '+'  izraz        {$$ = $1 + $3;}
+ *
+ * Primetimo da su svi tipovi podataka saglasni. neterminal izraz kao vrednost ima neki realan broj (double), pa ce 
+ * zbir realnih brojeva opet biti realan broj
+ */
+%%
+
+/* program posmatramo kao niz naredbi */
+program: naredba program
+    | naredba
+    ;
+/* primetimo da naredbe delimo prema njihovom efektu
+ * imamo tri tipa naredbi u nasem zamisljenom programskom jeziku
+ * 1. dodele (ciji je efekat kreiranje nove promenljive ili izmena vrednosti postojece)
+ * 2. stampanje vrednosti nekog izraza (ciji je efekat prikaz rezultata)
+ * 3. logicka naredba (ciji je rezultat True ili False u zavisnosti od ispunjenosti uslova)
+ *
+ * Naredbe se ne smeju proizvoljno mesati, jer gramatika mora da prati semantiku jezika.
+ * Preciznije, dodela ne moze biti deo izraz, logicka naredba ne moze biti deo izraza jer su im 
+ * rezultati nesaglasni. Naredbe sa istim tipom rezultata treba da budu deo istog neterminala.
+ */
+naredba: ID '=' izraz ';'               {
+                                            /* primetimo da u mapi kao kljuc koristimo string, zbog
+                                             * toga moramo da dereferenciramo pokazivac i da promenljivoj
+                                             * sa tim imenom dodelimo novu vrednost ili ako promenljiva ne 
+                                             * postoji da je kreiramo u mapi.
+                                             */
+                                            promenljive[*$1] = $3;
+                                            /* u mapi cuvamo stringove (kopija po vrednosti),
+                                             * pa nam objekat koji smo alocirali u lekseru vise ne treba
+                                             * i zbog toga ga unistavamo. u suprotnom bi nam curela memorija
+                                             */
+                                            delete $1;
+                                        }
+    | PRINT_T '(' izraz ')' ';'         { 
+                                            /* samo stampamo vrednost izraza */
+                                            std::cout << $3 << std::endl;
+                                            /* izraz je prost tip, tj. automatska promenljiva */
+                                        }
+    | logicka_naredba ';'               { 
+                                            /* u zavisnosti od vrednotsti logicke naredbe, stampamo rezultat  */
+                                            std::cout << ($1 ? "True" : "False") << std::endl;
+                                            /* logicka naredba je prost tip, tj. automatska promenljiva */
+                                        }
+    ;
+izraz: izraz '+' izraz                  { 
+                                            /* kao rezultat naredbe postavljamo zbir vrednosti sa desne strane pravila */
+                                            $$ = $1 + $3;
+                                            /* isto je i za ostale naredbe */
+                                        }
+    | izraz '-' izraz                   { $$ = $1 - $3;}
+    | izraz '*' izraz                   { $$ = $1 * $3;}
+    | izraz '/' izraz                   { $$ = $1 / $3;}
+    | '(' izraz ')'                     { $$ = $2;}
+    | '-' izraz %prec UMINUS            { 
+                                            /* unarni minus, nije isto sto i binarni minus, iako dele isti graficki simbol
+                                             * da bismo naglasili da je ovaj minus drugaciji, moramo da koristimo komandu %prec
+                                             * i da navedemo naziv naseg operatora
+                                             */
+                                            $$ = -$2;
+                                        }
+    | ID                                {
+                                            /* prvo treba da pronadjemo promenljivu u mapi */
+                                            auto it = promenljive.find(*$1);
+                                            /* ako promenljiva ne postoji, prijavljujemo gresku */
+                                            if (it == promenljive.end()) {
+                                                yyerror("Promenljiva nije definisana.");
+                                            }
+
+                                            /* kao rezultat akcije, postavljamo vrednost promenljive */
+                                            $$ = it->second;
+                                            /* BITNO:
+                                             * u zadacima u kojima koristimo klasne tipove, na ovom mestu
+                                             * cemo praviti kopiju promenljive iz mape.
+                                             * u ovom slucaju u mapi cuvamo prost tip, pa se on svakako prenosi
+                                             * po vrednosti, tj. kao kopija. 
+                                             */
+
+                                            /* unistavamo string alociran u lekseru, jer nam vise ne treba */
+                                            delete $1;                    
+                                        }
+    | BROJ                              { $$ = $1;}
+    ;
+logicka_naredba: izraz EQ izraz         { $$ = $1 == $3;}
+    | izraz NEQ izraz                   { $$ = $1 != $3;}
+    | izraz '<' izraz                   { $$ = $1 < $3;}
+    | izraz '>' izraz                   { $$ = $1 > $3;}
+    | izraz LEQ izraz                   { $$ = $1 <= $3;}
+    | izraz GEQ izraz                   { $$ = $1 >= $3;}
+    ;
+
+%%
+
+/* implementacija glavnog programa */
+int main() {
+
+    /* u programu pozivamo funkciju yyparse() koja pokrece sintaksnu analizu
+     * ako je sve u redu, tj. sintaksno ispravno, yyparse() vraca 0 kao vrednost
+     * proveravamo povratnu vrednost i stampamo poruku u zavisnosti od povratne vrednosti
+     */
+    if (yyparse() == 0) {
+
+        std::cout << "Sve ok" << std::endl;
+    }
+    else {
+        std::cout << "Sintaksna greska" << std::endl;
+    }
+
+    return 0;
+}
+
+
