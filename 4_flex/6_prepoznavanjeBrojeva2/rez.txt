@@ -1,0 +1,5 @@
+Nadjena celobrojna konstanta: -56
+Nadjena realna konstanta: +34.56e-12
+Nadjena celobrojna konstanta: 0
+Celih brojeva: 2
+Realnih brojeva: 1
