@@ -8,6 +8,7 @@ class KompleksniBroj {
 
 private:
     double _re, _im;
+
 public:
     KompleksniBroj();
     KompleksniBroj(double re, double im = 0);
@@ -18,6 +19,7 @@ public:
     void Re(double re);
     void Im(double im);
 
+    // const znaci da nece menjati polja klase 
     double Moduo() const;
     double Arg() const;
 

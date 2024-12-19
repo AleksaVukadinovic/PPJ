@@ -5,7 +5,7 @@ KompleksniBroj::KompleksniBroj() {
     _im = 0;
 }
 
-KompleksniBroj::KompleksniBroj(double re, double im=0){
+KompleksniBroj::KompleksniBroj(double re, double im){
     _re = re;
     _im = im;
 }
@@ -51,7 +51,7 @@ void KompleksniBroj::read(std::istream &s){
 }
 
 KompleksniBroj KompleksniBroj::operator +(const KompleksniBroj &kb) const {
-    return KompleksniBroj(_re+kb._re, _im+kb._re);
+    return KompleksniBroj(_re+kb._re, _im+kb._im);
 }
 
 KompleksniBroj& KompleksniBroj::operator +=(const KompleksniBroj &kb) {

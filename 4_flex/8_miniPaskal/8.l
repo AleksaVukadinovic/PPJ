@@ -5,6 +5,8 @@
     #include <stdlib.h>
     #include <string.h>
 
+    // 0 je rezervisana kad nista nije pronadjeno, zato brojanje krecemo od 1 
+    // token u main-u ce dobiti neku od ovih vrednosti
     #define KLJUCNA_REC 1
     #define ID 2
     #define I_CONST 3
@@ -26,7 +28,7 @@ if|then|begin|end|var|function|integer {return KLJUCNA_REC; }
 [1-9]{DIGIT}* {return I_CONST;}
 {DIGIT}+\.{DIGIT}* {return F_CONST;}
 [+-/*] {return AOP;}
-[<>=]|"<="|">+" {return ROP;}
+[<>=]|"<="|">=" {return ROP;}
 [,:;.!] {return INTERPUNKCIJA;}
 := {return DODELA;}
 "("|")" { return Z; }

@@ -1,0 +1,4 @@
+yyin - odavde lexer cita tekst za prepoznavanje
+yyout - ovde ga ispisuje
+yylex() - vraca rezultat koji smo definisali u akcijama
+yytext - sadrzi prepoznat string
