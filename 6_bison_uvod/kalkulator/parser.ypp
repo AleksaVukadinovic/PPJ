@@ -3,11 +3,13 @@
     #include <cstdlib>
     #include <map>
 
-    extern int yylex();
+    extern int yylex();    
+
     void yyerror(std::string s) {
-        std::cerr<<"Sintaksna greska: " << s << std::endl;
+        std::cerr << "Sintaksna greska:" << s << std::endl;
         exit(EXIT_FAILURE);
-    }    
+    }
+
     std::map<std::string, double> promenljive;
 %}
 
@@ -39,24 +41,22 @@ naredba: ID '=' izraz ';' {
     promenljive[*$1] = $3;
     delete $1;
 }
-| PRINT_T '(' izraz ')' ';' {
+| PRINT_T '(' izraz ')' ';' { 
     std::cout << $3 << std::endl;
 }
-| logicka_naredba ';' {
+| logicka_naredba ';' { 
     std::cout << ($1 ? "True" : "False") << std::endl;
 };
-
-izraz: izraz '+' izraz {
+izraz: izraz '+' izraz { 
     $$ = $1 + $3;
-
 }
-| izraz '-' izraz {
+| izraz '-' izraz { 
     $$ = $1 - $3;
 }
-| izraz '*' izraz {
+| izraz '*' izraz { 
     $$ = $1 * $3;
 }
-| izraz '/' izraz {
+| izraz '/' izraz { 
     $$ = $1 / $3;
 }
 | '(' izraz ')' { 
@@ -68,7 +68,7 @@ izraz: izraz '+' izraz {
 | ID {
     auto it = promenljive.find(*$1);
     if (it == promenljive.end()) 
-        yyerror("Promenljiva nije definisana.");        
+        yyerror("Promenljiva nije definisana.");
     $$ = it->second;
     delete $1;                    
 }
@@ -103,3 +103,4 @@ int main() {
         std::cout << "Sintaksna greska" << std::endl;
     return 0;
 }
+

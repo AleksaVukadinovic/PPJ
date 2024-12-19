@@ -3,14 +3,13 @@
 %{
     #include <iostream>
     #include <cstdlib>
-    #include "parser.tab.hpp"
+    #include "parser.tab.hpp"    
 %}
 
 %%
-print {
-    return PRINT_T;
-}
-[a-zA-Z_]+[A-Za-z0-9_]* {
+
+print {return PRINT_T;}
+[A-Za-z_]+[A-Za-z0-9_]* {
     yylval.s = new std::string(yytext);
     return ID;
 }
@@ -18,26 +17,15 @@ print {
     yylval.v = atof(yytext);
     return BROJ;
 }
-"==" {
-    return EQ;
-}
-"!=" {
-    return NEQ;
-}
-"<=" {
-    return LEQ;
-}
-">=" {
-    return GEQ;
-}
-[+*/<>;()=-] {
-    return *yytext;
-}
-[ \t\n] {
-
-}
+"==" {return EQ;}
+"!=" {return NEQ;}
+"<=" {return LEQ;}
+">=" {return GEQ;}
+[+*\<>;()=-] {return *yytext;}
+[ \t\n] { }
 . {
-    std::cerr << "Leksicka analiza: " << (*yytext) << std::endl;
+    std::cerr << "Leksicka greska: " << (*yytext) << std::endl;
     exit(EXIT_FAILURE);
 }
+
 %%
