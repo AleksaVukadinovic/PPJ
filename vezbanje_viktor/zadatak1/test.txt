@@ -1,0 +1,8 @@
+def x = 10;
+def y;
+
+x = 20;
+
+y = x + 30;
+
+print(x);
