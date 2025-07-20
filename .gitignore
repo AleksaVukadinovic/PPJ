@@ -1,1 +1,3 @@
 .vscode/
+lexer
+lex.yy.c
