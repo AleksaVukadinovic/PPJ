@@ -1,0 +1,17 @@
+x = 5;
+print(x);
+y = 7;
+print(y);
+
+
+z = 2*x + y;
+print(z);
+print(-2*z);
+x = (x - z)*y + 2*z;
+print(x);
+x == y;
+y != z*2;
+
+x = 2*3 + 4;
+
+k = x-3;

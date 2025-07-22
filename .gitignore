@@ -1,3 +1,8 @@
 .vscode/
 lexer
 lex.yy.c
+*.tab.* 
+*.yy.* 
+*.output 
+parser
+*.o

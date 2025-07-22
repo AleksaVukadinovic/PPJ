@@ -1,0 +1,111 @@
+%{
+  #include <iostream>
+  #include <cstdlib>
+  #include <map>
+
+  extern int yylex(); // uvek stavljamo
+
+  // parser automatski poziva ovu fju tako da uvek moramo da je definisemo
+  void yyerror(std::string s) {
+    std::cerr << "Sintaksna greska: " << s << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  std::map<std::string, double> promenljive;
+%}
+
+%left '+' '-'
+%left '*' '/'
+%right UMINUS
+
+// u okviru uniju smeju samo primitvni tipovi, ako nesto nije primtivni tip mora pokazivac
+%union {
+  double v;
+  bool b;
+  std::string* s;
+}
+
+// tokeni se koporaju
+%token PRINT_T EQ NEQ LEQ GEQ
+%token<v> BROJ
+%token<s> ID
+
+%type<v> izraz
+%type<b> logicka_naredba
+
+%start program
+
+%%
+program: naredba program
+| naredba
+;
+
+naredba: ID '=' izraz ';' {
+  promenljive[*$1] = $3;
+}
+| PRINT_T '(' izraz ')' ';' {
+  std::cout << $3 << std::endl;
+}
+| logicka_naredba ';' {
+  std::cout << ($1 ? "True" : "False") << std::endl;
+}
+;
+
+izraz: izraz '+' izraz {
+  $$ = $1 + $3;
+}
+| izraz '-' izraz {
+  $$ = $1 - $3;
+}
+| izraz '*' izraz {
+  $$ = $1 * $3;
+}
+| izraz '/' izraz {
+  $$ = $1 / $3;
+}
+| '(' izraz ')' {
+  $$ = $2;
+}
+| '-' izraz %prec UMINUS {
+  $$ = -$2;
+}
+| ID {
+  auto it = promenljive.find(*$1);
+  if (it == promenljive.end())
+    yyerror("Promenljiva nije definisana");
+  $$ = it->second;
+  delete $1;
+}
+| BROJ {
+  $$ = $1;
+}
+;
+
+logicka_naredba: izraz EQ izraz {
+  $$ = $1 == $3;
+}
+| izraz NEQ izraz {
+  $$ = $1 != $3;
+}
+| izraz LEQ izraz {
+  $$ = $1 <= $3;
+}| izraz GEQ izraz {
+  $$ = $1 >= $3;
+}
+| izraz '<' izraz {
+  $$ = $1 < $3;
+}
+| izraz '>' izraz {
+  $$ = $1 > $3;
+}
+;
+
+%%
+
+int main() {
+  if (yyparse() == 0)
+    std::cout << "Sve ok" << std::endl;
+  else 
+    std::cout << "Sintaksna greska" << std::endl;
+  return 0;
+}
