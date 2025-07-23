@@ -1,0 +1,257 @@
+%{
+  #include <iostream>
+  #include <cstdlib>
+  #include <map>
+  #include <vector>
+  #include "Matrica.hpp"
+
+  extern int yylex();
+
+  void yyerror(std::string s) {
+    std::cerr << "Sintaksna greska: " << s << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  std::map<std::string, Matrica*> promenljive;
+%}
+
+%union {
+  double d;
+  bool b;
+  std::string* s;
+  std::vector<double>* v;
+  Matrica* m;
+  std::pair<int, int>* p;
+}
+
+%token SIZE_T ROWS_T COLS_T EYE_T ZEROS_T ONES_T
+%token PODELI_T POMNOZI_T EQ_T NEQ_T
+%token<s> ID
+%token<d> BROJ
+
+%type<d> broj
+%type<v> red
+%type<m> matrica lista_redova izraz stampanje
+%type<p> interval
+%type<s> dodela
+%type<b> logicka_naredba
+
+%nonassoc EQ_T NEQ_T
+%left '+' '-'
+%left '*' POMNOZI_T PODELI_T
+%right UMINUS
+%left '\''
+%left '['
+
+%start program
+
+%%
+program: program naredba
+| naredba
+;
+
+naredba: dodela '\n' {
+  auto it promenljive.find(*$1);
+  if (it == promenljive.end())
+    yyerror("Promenljiva nije definisana");
+}
+| dodela ';' '\n' {
+  delete $1;
+}
+| stampanje '\n' {
+  std::cout << (*$1) << std::endl;
+  delete $1;
+}
+| stampanje ';' '\n' {
+  delete $1;
+}
+| logicka_naredba {
+  std::cout << ($1 ? "True" : "False") << std::endl;
+}
+| '\n' {
+
+}
+;
+
+logicka_naredba: izraz EQ_T izraz { 
+    $$ = *$1 == *$3; 
+    delete $1; 
+    delete $3; 
+}
+| izraz NEQ_T izraz { 
+    $$ = *$1 != *$3; 
+    delete $1; 
+    delete $3; 
+}
+;
+
+dodela: ID '=' izraz {
+  auto it = promenljive.find(*$1);
+  if (it == promenljive.end()) 
+    yyerror("Promenljiva nije definisana");
+  promenljive[*$1] = $3;
+  $$ = $1;
+}
+;
+
+stampanje: izraz {
+  $$ = $1;
+}
+| SIZE_T '(' izraz ')' {
+  $$ = new Matrica(1, 2);
+  std::pair<int, int> p = $3->Size();
+  (*$$)[0][0] = p.first;
+  (*$$)[0][1] = p.second;
+  delete $3;
+}
+| ROWS_T '(' izraz ')' {
+  $$ = new Matrica(1, 1);
+  (*$$)[0][0]= $3->Rows();
+  delete $3;
+}
+| COLS_T '(' izraz ')' {
+  $$ = new Matrica(1, 1);
+  (*$$)[0][0]= $3->Cols();
+  delete $3;
+}
+;
+
+izraz: izraz '+' izraz {
+  $$ = *$1 + *$3;
+  if ($$ == nullptr)
+    yyerror("Greska u dimenzijama");
+  delete $1;
+  delete $3;
+}
+| izraz '-' izraz {
+    $$ = *$1 - *$3;
+  if ($$ == nullptr)
+    yyerror("Greska u dimenzijama");
+  delete $1;
+  delete $3;
+}
+| izraz '-' izraz {
+    $$ = *$1 * *$3;
+  if ($$ == nullptr)
+    yyerror("Greska u dimenzijama");
+  delete $1;
+  delete $3;
+}
+| izraz PODELI_T izraz {
+  $$ = $1->Podeli(*$3);
+    if ($$ == nullptr)
+    yyerror("Greska u dimenzijama");
+  delete $1;
+  delete $3;
+}
+| izraz POMNOZI_T izraz {
+  $$ = $1->Pomnozi(*$3);
+    if ($$ == nullptr)
+    yyerror("Greska u dimenzijama");
+  delete $1;
+  delete $3;
+}
+| '(' izraz ')' {
+  $$ = $2;
+}
+| '-' izraz %prec UMINUS {
+  $$ = -(*$2);
+  delete $2;
+}
+| izraz '\'' {
+  $$ = $1->Transponuj(); delete $1;
+}
+| izraz '[' interval ',' interval ']' {
+  $$ = $1->SubMatrix(*$3, *$5);
+  if ($$ == nullptr) 
+    yyerror("Greska u dimenzijama");
+  delete $1;
+  delete $3;
+  delete $5;
+}
+| ID {
+  auto it = promenljive.find(*$1);
+    if ($$ == nullptr) 
+    yyerror("Promenljiva nije definisana");
+  $$ = new Matrica(it->second);
+  delete $1;
+}
+| BROJ {
+  $$ = new Matrica(1,1);
+  (*$$)[0][0] = $1;
+}
+| EYE_T '(' BROJ ')' {
+  $$ = new Matrica($3, $3);
+  for (int i=0; i<$3; i++)
+    (*$$)[i][i] = 1;
+}
+| ZEROS_T '(' BROJ ',' BROJ ')' {
+  $$ = new Matrica($3, $5);
+}
+| ONES_T '(' BROJ ',' BROJ ')' {
+  $$ = new Matrica($3, $5, 1);
+}
+| matrica {
+  $$ = $1;
+}
+;
+
+interval: BROJ ':' BROJ {
+  $$ = new std::pair<int,int>($1, $3);
+}
+| BROJ {
+  $$ = new std::pair<int,int>($1, $1);
+}
+| ':' {
+  $$ = new std::pair<int,int>(-1, -1);
+}
+;
+
+matrica: '[' lista_redova ']' {
+  $$ = $2;
+}
+lista_redova: lista_redova ';' red {
+    if($3->size() != $1->Columns())
+      yyerror("Greska u dimenzijama");
+    $1->dodajRed(*$3);
+    delete $3;
+    $$ = $1;
+}
+| red {
+  $$ = new Matrica();
+  $$->dodajRed(*$1);
+  delete $1;
+}
+;
+
+red: red ',' broj {
+  $1->push_back($3);
+  $$ = $1;
+}
+| broj {
+  $$ = new std::vector<double>();
+  $$->push_back($1);
+}
+;
+
+broj: '-' BROJ {
+  $$ = -$2;
+}
+| BROJ {
+  $$ = $1;
+}
+;
+
+%%
+
+int main() {
+  if (yyparse() == 0)
+    std::cout << "Sve ok" << std::endl;
+  else 
+    std::cout << "Sintaksna greska" << std::endl;
+
+  for (auto it = promenljive.begin(); it!=promenljive.end(); it++)
+    delete it->second;
+  
+  exit(EXIT_SUCCESS);
+}
