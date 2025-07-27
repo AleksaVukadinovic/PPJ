@@ -7,17 +7,17 @@ parser.o: parser.tab.hpp parser.tab.cpp
 lexer.o: lex.yy.c
 	g++ -c lex.yy.c -o lexer.o
 
-syntax_tree.o: SyntaxTree.hpp SyntaxTree.cpp
-	g++ -c SyntaxTree.cpp -o syntax_tree.o
-
-tabela.o: SymbolTable.hpp SymbolTable.cpp
-	g++ -c SymbolTable.cpp -o tabela.o
-
 parser.tab.hpp parser.tab.cpp: parser.ypp
 	bison -d -v parser.ypp
 
 lex.yy.c: lexer.l
 	flex -l lexer.l
+
+syntax_tree.o: SyntaxTree.hpp SyntaxTree.cpp
+	g++ -c SyntaxTree.cpp -o syntax_tree.o
+
+tabela.o: SymbolTable.hpp SymbolTable.cpp
+	g++ -c SymbolTable.cpp -o tabela.o
 
 .PHONY: clean
 

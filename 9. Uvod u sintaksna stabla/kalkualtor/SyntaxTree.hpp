@@ -10,7 +10,7 @@
 
 class SyntaxTreeNode {
 public:
-  virtual ~SyntaxTreeNode();
+  virtual ~SyntaxTreeNode() {}
 
   virtual int interpret(SymbolTable &st) const = 0;
   virtual SyntaxTreeNode *clone() const = 0;
@@ -72,6 +72,7 @@ public:
 };
 
 class EqualityNode : public LogicNode {
+public:
   EqualityNode(SyntaxTreeNode *value_left, SyntaxTreeNode *value_right);
   EqualityNode(const EqualityNode &en);
 
@@ -80,9 +81,9 @@ class EqualityNode : public LogicNode {
 };
 
 class InequalityNode : public LogicNode {
+public:
   InequalityNode(SyntaxTreeNode *value_left, SyntaxTreeNode *value_right);
   InequalityNode(const InequalityNode &in);
-  ~InequalityNode();
 
   int interpret(SymbolTable &st) const;
   SyntaxTreeNode *clone() const;

@@ -14,7 +14,7 @@ int SymbolTable::getValue(const std::string &s) const {
   return it->second;
 }
 
-void SymbolTable::addVar(const std::string &s, const int val = 0) {
+void SymbolTable::addVar(const std::string &s, const int val) {
   if (isDefined(s))
     std::cerr << "Variable " << s << " is already defined\n";
   _vars[s] = val;
