@@ -59,45 +59,45 @@ niz_naredbi: niz_naredbi naredba {
 }
 ;
 
-naredba: naredba_dodele ';' {
+naredba: naredba_dodele {
   $$ = $1;
 }
-| print_naredba  ';' {
+| print_naredba {
   $$ = $1;
 }
-| logicka_naredba ';' {
+| logicka_naredba {
   $$ = $1;
 }
 ;
 
-naredba_dodele: DEF_T ID_T {
+naredba_dodele: DEF_T ID_T ';' {
   $$ = new AssignmentNode(*$2);
   delete $2;
 }
-| DEF_T ID_T '=' izraz {
+| DEF_T ID_T '=' izraz ';' {
   $$ = new AssignmentNode(*$2, $4);
   delete $2;
   delete $4;
 }
-| ID_T '=' izraz {
+| ID_T '=' izraz ';' {
   $$ = new AssignmentNode(*$1, $3);
   delete $1;
   delete $3;
 }
 ;
 
-print_naredba: PRINT_T '(' '"' FORMAT_T '"' ',' izraz ')' {
+print_naredba: PRINT_T '(' '"' FORMAT_T '"' ',' izraz ')' ';' {
   $$ = new PrintNode($4, $7);
   delete $7;
 }
 ;
 
-logicka_naredba: izraz EQ_T izraz {
+logicka_naredba: izraz EQ_T izraz ';'{
   $$ = new EqualityNode($1, $3);
   delete $1;
   delete $3;
 }
-| izraz NEQ_T izraz {
+| izraz NEQ_T izraz ';' {
   $$ = new InequalityNode($1, $3);
   delete $1;
   delete $3;
@@ -180,7 +180,9 @@ izraz: izraz '+' izraz {
 int main() {
   if (yyparse() == 0) {
     std::cout << "Sve ok" << std::endl;
+    root->interpret(st);
   }
+  delete root;
 
   exit(EXIT_SUCCESS);
 }

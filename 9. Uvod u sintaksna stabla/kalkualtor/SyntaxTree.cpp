@@ -49,6 +49,9 @@ int AssignmentNode::interpret(SymbolTable &st) const {
     st.addVar(_name, _value->interpret(st));
   return 0;
 }
+SyntaxTreeNode *AssignmentNode::clone() const {
+  return new AssignmentNode(*this);
+}
 
 // Print Node
 
@@ -61,14 +64,14 @@ PrintNode::~PrintNode() { delete _value; }
 int PrintNode::interpret(SymbolTable &st) const {
   switch (_format) {
   case 'h':
-    std::cout << std::hex << _value->interpret(st) << std::dec;
+    std::cout << std::hex << _value->interpret(st) << std::dec << std::endl;
     break;
   case 'b':
-    std::cout << std::bitset<8 * sizeof(int)>(_value->interpret(st))
-              << std::dec;
+    std::cout << std::bitset<8 * sizeof(int)>(_value->interpret(st)) << std::dec
+              << std::endl;
     break;
   case 'd':
-    std::cout << _value->interpret(st);
+    std::cout << _value->interpret(st) << std::endl;
     break;
   default:
     break;
@@ -197,6 +200,9 @@ int UnaryOperatorNode::interpret(SymbolTable &st) const {
     return 0;
     break;
   }
+}
+SyntaxTreeNode *UnaryOperatorNode::clone() const {
+  return new UnaryOperatorNode(*this);
 }
 
 // Constant Node

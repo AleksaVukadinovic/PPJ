@@ -43,11 +43,14 @@ print {
 ">>" {
   return SHIFTR_T;
 }
-[="%,;+*/~|&^-] {
+[=()"%,;+*/~|&^-] {
   return *yytext;
 }
+[ \t\n] {
+  
+}
 . {
-  std::cerr << "Leksicka greska: " << *yytext << std::endl; 
+  std::cerr << "Leksicka greska: " << (*yytext) << std::endl; 
 }
 
 %%
