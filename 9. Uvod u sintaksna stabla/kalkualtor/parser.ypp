@@ -1,0 +1,186 @@
+%{
+  #include <iostream>
+  #include <cstdlib>
+  #include <string>
+
+  #include "SymbolTable.hpp"
+  #include "SyntaxTree.hpp"
+
+  extern int yylex();
+
+  void yyerror(std::string s) {
+    std::cerr << "Sintaksna greska: " << s << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  SymbolTable st;
+  SyntaxTreeNode* root = NULL;
+%}
+
+%union {
+  int i;
+  std::string* s;
+  char c;
+  SyntaxTreeNode* stn;
+  std::vector<SyntaxTreeNode*>* v;
+}
+
+%token DEF_T PRINT_T EQ_T NEQ_T SHIFTL_T SHIFTR_T
+%token<i> INT_T
+%token<s> ID_T
+%token<c> FORMAT_T
+
+%left '+' '-'
+%left '*' '/' '%'
+%left SHIFTL_T SHIFTR_T '^' '|' '&'
+%right UMINUS
+%right '~' 
+
+%type<stn> program izraz naredba naredba_dodele logicka_naredba print_naredba
+%type<v> niz_naredbi
+
+%start program
+
+%%
+
+program: niz_naredbi {
+  root = new StatementSequenceNode(*$1);
+  delete $1;
+}
+;
+
+niz_naredbi: niz_naredbi naredba {
+  $$ = $1;
+  $$->push_back($2);
+}
+| naredba {
+  $$ = new std::vector<SyntaxTreeNode*>();
+  $$->push_back($1);
+}
+;
+
+naredba: naredba_dodele ';' {
+  $$ = $1;
+}
+| print_naredba  ';' {
+  $$ = $1;
+}
+| logicka_naredba ';' {
+  $$ = $1;
+}
+;
+
+naredba_dodele: DEF_T ID_T {
+  $$ = new AssignmentNode(*$2);
+  delete $2;
+}
+| DEF_T ID_T '=' izraz {
+  $$ = new AssigmentNode(*$2, $4);
+  delete $2;
+  delete $4;
+}
+| ID_T '=' izraz {
+  $$ = new AssigmentNode(*$1, $3);
+  delete $1;
+  delete $3;
+}
+;
+
+print_naredba: PRINT_T '(' '"' FORMAT_T '"' ',' izraz ')' {
+  $$ = new PrintNode($4, $7);
+  delete $7;
+}
+;
+
+logicka_naredba: izraz EQ_T izraz {
+  $$ = new EqualityNode($1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz NEQ_T izraz {
+  $$ = new InequalityNode($1, $3);
+  delete $1;
+  delete $3;
+}
+;
+
+izraz: izraz '+' izraz {
+  $$ = new BinaryOperator('+', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz '-' izraz {
+  $$ = new BinaryOperator('-', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz '*' izraz {
+  $$ = new BinaryOperator('*', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz '/' izraz {
+  $$ = new BinaryOperator('/', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz '%' izraz {
+  $$ = new BinaryOperator('%', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz SHIFTL_T izraz {
+  $$ = new BinaryOperator('l', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz SHIFTR_T izraz {
+  $$ = new BinaryOperator('r', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz '&' izraz {
+  $$ = new BinaryOperator('&', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz '|' izraz {
+  $$ = new BinaryOperator('|', $1, $3);
+  delete $1;
+  delete $3;
+}
+| izraz '^' izraz {
+  $$ = new BinaryOperator('^', $1, $3);
+  delete $1;
+  delete $3;
+}
+| '(' izraz ')' {
+  $$ = $2; // ne pravimo novi, vec ga imamo, samo ga saljemo dalje
+}
+| '-' izraz %prec UMINUS {
+  $$ = new UnaryOperator('-', $2);
+  delete $2;
+}
+| '~' izraz  {
+  $$ = new UnaryOperator('~', $2);
+  delete $2;
+}
+| ID_T {
+  $$ = new VariableNode(*$1);
+  delete $1;
+}
+| INT_T {
+  $$ = new ConstantNode($1);
+}
+;
+
+
+%%
+
+int main() {
+  if (yyparse() == 0) {
+    std::cout << "Sve ok" << std::endl;
+  }
+
+  exit(EXIT_SUCCESS);
+}
