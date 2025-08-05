@@ -1,0 +1,123 @@
+%{
+    #include <iostream>
+    #include <cstdlib>
+
+    #include "SymbolTable.hpp"
+    #include "SyntaxTree.hpp"
+
+    extern int yylex();
+
+    void yyerror(std::string s) {
+        std::cerr << "Sintaksna greska: "  << s << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    SymbolTable st;
+    SyntaxTree* root = nullptr;
+%}
+
+%union {
+    int v;
+    std::string* s;
+    SyntaxTreeNode* stn;
+}
+
+%left '+' '-'
+%left '*' '/'
+%right UMINUS
+
+%token BEGIN_T END_T WHILE_T DO_T THEN_T IF_T ELSE_T
+%token PRINT_T DODELA_T EQ_T NEQ_T LEQ_T GEQ_T
+%token<s> ID_T
+%token<v>  NUM_T
+
+%type<stn> izraz uslov naredba niz_naredbi blok
+
+%nonassoc IFNOELSE
+%nonassoc ELSE_T
+
+%start program
+
+%%
+
+program: blok '.' {
+    root = $1;
+}
+;
+
+blok: BEGIN_T niz_naredbi END_T {
+    $$ = new Statem($2);
+    for (auto p : $2)
+        delete p;
+    delete $2;
+};
+
+niz_naredbi: niz_naredbi naredba {
+
+}
+| naredba {
+
+};
+
+naredba: ID_T DODELA_T izraz ';' {
+
+}
+| WHILE_T uslov DO_T blok {
+
+}
+| WHILE_T uslov DO_T naredba  {
+
+}
+| IF_T uslov THEN_T blok {
+
+}
+| IF_T uslov THEN_T naredba {
+
+}
+| IF_T uslov THEN_T blok ELSE_T blok  {
+
+}
+| IF_T uslov THEN_T blok ELSE_T naredba {
+
+}
+| IF_T uslov THEN_T naredba ELSE_T blok {
+
+}
+| IF_T uslov THEN_T naredba ELSE_T naredba {
+
+}
+| PRINT_T '(' izraz ')' ';' {
+
+}
+;
+
+uslov: izraz '<' izraz {
+    $$ = new Logic($1, $3)
+}
+| izraz '>' izraz {
+
+}
+;
+
+izraz: izraz '+' izraz {
+
+}
+| izraz '-' izraz {
+
+}
+| '(' izraz ')' {
+
+}
+| ID_T {
+
+}
+| NUM_T {
+
+}
+;
+
+%%
+
+int main() {
+    root->interpret(st);
+}
