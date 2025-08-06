@@ -1,6 +1,7 @@
 %{
     #include <iostream>
     #include <cstdlib>
+    #include <vector>
 
     #include "SymbolTable.hpp"
     #include "SyntaxTree.hpp"
@@ -8,116 +9,133 @@
     extern int yylex();
 
     void yyerror(std::string s) {
-        std::cerr << "Sintaksna greska: "  << s << std::endl;
+        std::cerr << "Sintaksna greska: " << s << std::endl;
         exit(EXIT_FAILURE);
     }
 
     SymbolTable st;
-    SyntaxTree* root = nullptr;
+    SyntaxTreeNode* root = nullptr;
 %}
 
 %union {
-    int v;
+    int i;
     std::string* s;
     SyntaxTreeNode* stn;
 }
 
+%token BEGIN_T END_T WHILE_T PRINT_T IF_T ELSE_T DO_T THEN_T ASSIGN_T
+%token<s> ID_T;
+%token<i> NUM_T;
+
 %left '+' '-'
-%left '*' '/'
-%right UMINUS
-
-%token BEGIN_T END_T WHILE_T DO_T THEN_T IF_T ELSE_T
-%token PRINT_T DODELA_T EQ_T NEQ_T LEQ_T GEQ_T
-%token<s> ID_T
-%token<v>  NUM_T
-
-%type<stn> izraz uslov naredba niz_naredbi blok
-
-%nonassoc IFNOELSE
+%nonassoc IF_T
 %nonassoc ELSE_T
+
+%type<stn> naredba uslov izraz niz_naredbi blok
 
 %start program
 
 %%
 
-program: blok '.' {
+program: blok '.'{
     root = $1;
 }
 ;
 
 blok: BEGIN_T niz_naredbi END_T {
-    $$ = new Statem($2);
-    for (auto p : $2)
-        delete p;
-    delete $2;
-};
+    $$ = $2;
+}
+;
 
 niz_naredbi: niz_naredbi naredba {
-
+    StatementSequenceNode* ss = dynamic_cast<StatementSequenceNode*>($1);
+    ss->addNode($2);
+    $$ = ss;
+    delete $2;
 }
 | naredba {
-
-};
-
-naredba: ID_T DODELA_T izraz ';' {
-
+    StatementSequenceNode* ss = new StatementSequenceNode();
+    ss->addNode($1);
+    $$ = ss;
+    delete $1;
 }
-| WHILE_T uslov DO_T blok {
+;
 
+naredba: ID_T ASSIGN_T izraz ';' {
+    $$ = new AssignmentNode(*$1, $3);
+    delete $1;
+    delete $3;
 }
-| WHILE_T uslov DO_T naredba  {
-
-}
-| IF_T uslov THEN_T blok {
-
-}
-| IF_T uslov THEN_T naredba {
-
-}
-| IF_T uslov THEN_T blok ELSE_T blok  {
-
-}
-| IF_T uslov THEN_T blok ELSE_T naredba {
-
-}
-| IF_T uslov THEN_T naredba ELSE_T blok {
-
-}
-| IF_T uslov THEN_T naredba ELSE_T naredba {
-
+| WHILE_T uslov DO_T naredba {
+    $$ = new WhileNode($2, $4);
+    delete $2;
+    delete $4;
 }
 | PRINT_T '(' izraz ')' ';' {
-
+    $$ = new PrintNode($3);
+    delete $3;
+}
+| IF_T uslov THEN_T naredba ELSE_T naredba {
+        $$ = new IfElseNode($2, $4, $6);
+        delete $2;
+        delete $4;
+        delete $6;
+}
+| IF_T uslov THEN_T naredba %prec IF_T {
+        $$ = new IfNode($2, $4);
+        delete $2;
+        delete $4;
+}
+| blok {
+    $$ = $1;
 }
 ;
 
 uslov: izraz '<' izraz {
-    $$ = new Logic($1, $3)
+    $$ = new BinaryOperatorNode('<', $1, $3);
+    delete $1;
+    delete $3;
 }
 | izraz '>' izraz {
-
+    $$ = new BinaryOperatorNode('>', $1, $3);
+    delete $1;
+    delete $3;
 }
 ;
 
 izraz: izraz '+' izraz {
-
+    $$ = new BinaryOperatorNode('+', $1, $3);
+    delete $1;
+    delete $3;
 }
-| izraz '-' izraz {
-
+| izraz  '-' izraz {
+    $$ = new BinaryOperatorNode('-', $1, $3);
+    delete $1;
+    delete $3;
 }
 | '(' izraz ')' {
-
+    $$ = $2;
 }
 | ID_T {
-
+    $$ = new IdentifierNode(*$1);
+    delete $1;
 }
-| NUM_T {
-
+| NUM_T{
+    $$ = new ConstantNode($1);
 }
 ;
 
 %%
 
 int main() {
+    if (yyparse() == 0) {
+        std::cout << "Sve ok" << std::endl;
+    } else {
+        std::cerr << "Greska" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     root->interpret(st);
+    delete root;
+    exit(EXIT_SUCCESS);
 }

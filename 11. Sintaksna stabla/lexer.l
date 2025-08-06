@@ -3,6 +3,7 @@
 %{
     #include <iostream>
     #include <cstdlib>
+    #include <vector>
 
     #include "SymbolTable.hpp"
     #include "SyntaxTree.hpp"
@@ -10,6 +11,7 @@
 %}
 
 %%
+
 begin {
     return BEGIN_T;
 }
@@ -25,7 +27,7 @@ print {
 if {
     return IF_T;
 }
-else {
+else  {
     return ELSE_T;
 }
 then {
@@ -39,26 +41,20 @@ do {
     return ID_T;
 }
 [0-9]+ {
-    yylval.v = atoi(yytext);
+    yylval.i = atoi(yytext);
     return NUM_T;
 }
 ":=" {
-    return DODELA_T;
+    return ASSIGN_T;
 }
-"<=" {
-    return LEQ_T;
-}
-">=" {
-    return GEQ_T;
-}
-[+*/();.<>-] {
+[+;.()<>-] {
     return *yytext;
 }
 [ \t\n] {
 
 }
 . {
-    std::cerr << "Leksicka greska: " << (*yytext) << std::endl;
+    std::cerr << "Lekscika greska: " << (*yytext) << std::endl;
     exit(EXIT_FAILURE);
 }
 %%

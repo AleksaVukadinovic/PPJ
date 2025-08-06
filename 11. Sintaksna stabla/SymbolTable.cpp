@@ -1,13 +1,14 @@
 #include "SymbolTable.hpp"
 
-int SymbolTable::getValue(const std::string& s) const {
-    auto it = _variables.find(s);
-
-    if (it == _variables.end())
-        throw std::invalid_argument("Promenljiva nije definisana");
-
-    return it->second;
+void SymbolTable::addVariable(const std::string &name, const int value) {
+  _variables[name] = value;
 }
-void SymbolTable::defineValue(const std::string& s, int val) {
-    _variables[s] = val;
+
+int SymbolTable::getValue(const std::string &name) const {
+  auto it = _variables.find(name);
+
+  if (it == _variables.end())
+    throw new std::invalid_argument("Variable" + name + "is not defined");
+
+  return it->second;
 }
