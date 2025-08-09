@@ -61,7 +61,7 @@ private:
 
 public:
   BinaryOperatorNode(char symbol, SyntaxTreeNode *left, SyntaxTreeNode *right);
-  BinaryOperatorNode(const BinaryOperatorNode *bon);
+  BinaryOperatorNode(const BinaryOperatorNode &bon);
   ~BinaryOperatorNode();
 
   double interpret(SymbolTable &st) const;

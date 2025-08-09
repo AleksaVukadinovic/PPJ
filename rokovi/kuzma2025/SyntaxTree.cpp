@@ -55,9 +55,9 @@ SyntaxTreeNode *UpdateNode::clone() const { return new UpdateNode(*this); }
 BinaryOperatorNode::BinaryOperatorNode(char symbol, SyntaxTreeNode *left,
                                        SyntaxTreeNode *right)
     : _symbol(symbol), _left(left->clone()), _right(right->clone()) {}
-BinaryOperatorNode::BinaryOperatorNode(const BinaryOperatorNode *bon)
-    : _symbol(bon->_symbol), _left(bon->_left->clone()),
-      _right(bon->_right->clone()) {}
+BinaryOperatorNode::BinaryOperatorNode(const BinaryOperatorNode &bon)
+    : _symbol(bon._symbol), _left(bon._left->clone()),
+      _right(bon._right->clone()) {}
 BinaryOperatorNode::~BinaryOperatorNode() {
   delete _left;
   delete _right;
