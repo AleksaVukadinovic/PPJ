@@ -131,9 +131,9 @@ IfElseNode::IfElseNode(SyntaxTreeNode *condition, SyntaxTreeNode *then,
                        SyntaxTreeNode *other)
     : _condition(condition->clone()), _then(then->clone()),
       _other(other->clone()) {}
-IfElseNode::IfElseNode(const IfElseNode &in)
-    : _condition(in._condition->clone()), _then(in._then->clone()),
-      _other(in._other->clone()) {}
+IfElseNode::IfElseNode(const IfElseNode &ien)
+    : _condition(ien._condition->clone()), _then(ien._then->clone()),
+      _other(ien._other->clone()) {}
 IfElseNode::~IfElseNode() {
   delete _condition;
   delete _then;
@@ -151,8 +151,8 @@ SyntaxTreeNode *IfElseNode::clone() const { return new IfElseNode(*this); }
 
 WhileNode::WhileNode(SyntaxTreeNode *condition, SyntaxTreeNode *expr)
     : _condition(condition->clone()), _expr(expr->clone()) {}
-WhileNode::WhileNode(const WhileNode &in)
-    : _condition(in._condition->clone()), _expr(in._expr->clone()) {}
+WhileNode::WhileNode(const WhileNode &wn)
+    : _condition(wn._condition->clone()), _expr(wn._expr->clone()) {}
 WhileNode::~WhileNode() {
   delete _condition;
   delete _expr;

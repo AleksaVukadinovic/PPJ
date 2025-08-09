@@ -53,13 +53,11 @@ niz_naredbi: niz_naredbi naredba {
       yyerror("Niz naredbi greska");
   ssn->addNode($2);
   $$ = ssn;
-  delete $2;
 }
 | naredba {
   StatementSequneceNode* ssn = new StatementSequneceNode();
   ssn->addNode($1);
   $$ = ssn;
-  delete $1;
 }
 ;
 
