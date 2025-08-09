@@ -1,0 +1,149 @@
+%{
+    #include <iostream>
+    #include <map>
+    #include <vector>
+    #include <cstdlib>
+    #include <bitset>
+
+    #include "SymbolTable.hpp"
+
+    extern int yylex();
+
+    void yyerror(std::string s) {
+        std::cout << "Sintaksna greska: " << s << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    SymbolTable st;
+%}
+
+%union {
+    std::string* s;
+    int i;
+    char c;
+}
+
+%left '|' '^' '&' LSHIFT_T RSHIFT_T
+%left '+' '-'
+%left '*' '/' '%'
+%right UMINUS
+%right '~'
+
+%token PRINT_T EQ_T NEQ_T LSHIFT_T RSHIFT_T DEF_T
+%token<s> ID_T
+%token<i> NUM_T
+%token<c> FORMAT_T
+
+%type naredba naredba_dodele  logicka_naredba prazna_naredba
+%type<i> izraz
+
+%start program
+
+%%
+
+program: program naredba
+| naredba
+;
+
+naredba: naredba_dodele
+| naredba_stampanja
+| prazna_naredba
+;
+
+naredba_dodele: DEF_T ID_T ';' {
+    st.addValue(*$2);
+    delete $2;
+}
+| DEF_T ID_T '=' izraz ';' {
+    st.addValue(*$2, $4);
+    delete $2;
+}
+| ID_T '=' izraz ';' {
+    st.updateValue(*$1, $3);
+    delete $1;
+}
+;
+
+prazna_naredba: ';'
+;
+
+naredba_stampanja: PRINT_T '(' FORMAT_T ',' izraz ')' ';' {
+    const char format = $3;
+    if (format == 'h') {
+        std::cout << std::hex << $5 << std::endl;
+    } else if (format == 'b') {
+        std::bitset<sizeof(int) * 8> binaryRepresentation($5);
+        std::cout << std::hex << binaryRepresentation << std::endl;
+    } else if (format == 'd') {
+        std::cout << $5 << std::endl;
+    }
+}
+| logicka_naredba ';'
+;
+
+logicka_naredba: izraz EQ_T izraz {
+    std::cout << ($1 == $3 ? "True" : "False") << std::endl;
+}
+| izraz NEQ_T izraz {
+    std::cout << ($1 != $3 ? "True" : "False") << std::endl;
+}
+;
+
+izraz: izraz '+' izraz {
+    $$ = $1 + $3;
+}
+| izraz '-' izraz {
+    $$ = $1 - $3;
+}
+| izraz '*' izraz {
+    $$ = $1 * $3;
+}
+| izraz '/' izraz {
+    $$ = $1 / $3;
+}
+| izraz '%' izraz {
+    $$ = $1 % $3;
+}
+| izraz '&' izraz {
+    $$ = $1 & $3;
+}
+| izraz '|' izraz {
+    $$ = $1 | $3;
+}
+| izraz '^' izraz {
+    $$ = $1 ^ $3;
+}
+| izraz LSHIFT_T izraz {
+    $$ = $1 << $3;
+}
+| izraz RSHIFT_T izraz {
+    $$ = $1 >> $3;
+}
+| '(' izraz ')' {
+    $$ = $2;
+}
+| '~' izraz {
+    $$ = ~$2;
+}
+| '-' izraz %prec UMINUS {
+    $$ = -$2;
+}
+| ID_T {
+    $$ = st.getValue(*$1);
+}
+| NUM_T {
+    $$ = $1;
+}
+;
+
+%%
+
+int main() {
+    if (yyparse() == 0) {
+        std::cout << "Sve ok" << std::endl;
+    } else {
+        std::cout << "Greska u parsiranju" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    exit(EXIT_SUCCESS);
+}
