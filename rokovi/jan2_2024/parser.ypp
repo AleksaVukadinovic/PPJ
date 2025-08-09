@@ -60,12 +60,12 @@ naredba: DEF_T ID_T ';' {
   delete $1;
 } 
 | DEF_T ID_T '=' izraz ';' {
-  $$ = new AssigmentNode(*$2, $4);
+  $$ = new AssignmentNode(*$2, $4);
   delete $2;
   delete $4;
 }
 | ID_T '=' izraz ';' {
-  $$ = new AssigmentNode(*$1, $3);
+  $$ = new AssignmentNode(*$1, $3);
   delete $1;
   delete $3;
 }

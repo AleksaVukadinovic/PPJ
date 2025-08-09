@@ -1,0 +1,22 @@
+def x = 25;
+def y = 38.8;
+print(x+y);
+def z = x + 3 *y;
+
+while (x > 10) {
+  if (x - 2) {
+    z = z * 2;
+  }
+  else {
+    z = z+ 3;
+  }
+  x = x - 1;
+}
+
+def k = 5;
+
+if (z+2) {
+  print(k);
+}
+
+print(k);
