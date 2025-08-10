@@ -1,0 +1,21 @@
+int x = 20;
+double y = 25.25;
+print(x + y);
+double z = x+ 3*y;
+
+while (x>10) {
+  if (x % 2) {
+    z = z*2;
+  }
+  else {
+    z = z+3;
+  }
+  x = x - 1;
+}
+
+if (z % 2) {
+  string k = "z je parno";
+  print(k);
+}
+
+print(x);

@@ -1,0 +1,4 @@
+Kad napises parser pokreni ga (bison -d -v):
+- shift/reduce conflict (dobar slucaj) -> definisi prioritete i asocijativnost
+- reduce/reduce conflict (los slucaj) -> pisi gramatiku ispocetka
+Otvori parser.output tu tacno pise na kojoj liniji su konflikti

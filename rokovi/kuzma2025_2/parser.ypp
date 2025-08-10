@@ -1,0 +1,200 @@
+%{
+  #include <iostream>
+  #include <cstdlib>
+  #include <map>
+  #include <vector>
+  #include <exception>
+  #include "Type.hpp"
+  #include "SymbolTable.hpp"
+  #include "SyntaxTree.hpp"
+
+  extern int yylex();
+
+  void yyerror(std::string s) {
+    std::cerr << "Sintaksna greska: " << s << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  SymbolTable st;
+  SyntaxTreeNode* root = nullptr;
+%}
+
+%union {
+  int ival;
+  double dval;
+  std::string* str;
+  Type* tt;
+  SyntaxTreeNode* stn;
+}
+
+%left '+' '-'
+%left '*' '/' '%'
+%right UMINUS
+%nonassoc IFNOELSE
+%nonassoc ELSE_T
+
+%token INT_T DOUBLE_T STRING_T PRINT_T WHILE_T IF_T ELSE_T EQ_T NEQ_T LEQ_T GEQ_T
+%token<str> ID_T STRING_VAL_T
+%token<ival> IBROJ_T
+%token<dval> RBROJ_T
+
+%type<stn> broj konstanta izraz blok grananje petlja definicija naredba niz_naredbi stampanje uslov
+
+%start program
+
+%%
+program: niz_naredbi {
+
+}
+;
+
+niz_naredbi: niz_naredbi naredba {
+
+}
+| naredba {
+
+}
+;
+
+naredba: definicija ';' {
+
+}
+| stampanje ';' {
+
+}
+| petlja {
+
+}
+| grananje {
+
+}
+;
+
+definicija: INT_T ID_T '=' izraz {
+
+}
+| DOUBLE_T ID_T '=' izraz {
+
+}
+| STRING_T ID_T '=' STRING_VAL_T {
+
+}
+| ID_T '=' izraz {
+
+}
+;
+
+stampanje:PRINT_T '(' izraz ')' {
+  $$ = new PrintNode($3);
+  delete $3;
+}
+;
+
+petlja: WHILE_T '(' uslov ')' blok {
+
+}
+;
+
+grananje: IF_T '(' uslov ')' blok %prec IFNOELSE {
+  $$ = new IfNode($3, $5, nullptr);
+  delete $3;
+  delete $5;
+}
+| IF_T '(' uslov ')' blok ELSE_T blok {
+  $$ = new IfNode($3, $5, $7);
+  delete $3;
+  delete $5;
+  delete $7;
+}
+;
+
+blok: '{' niz_naredbi '}' {
+  $$ = new BlockNode($2);
+}
+;
+
+uslov: izraz EQ_T izraz {
+
+}
+| izraz NEQ_T izraz {
+
+}
+| izraz LEQ_T izraz {
+
+}
+| izraz GEQ_T izraz {
+
+}
+| izraz '<' izraz {
+
+}
+| izraz '>' izraz {
+
+}
+| izraz {
+
+}
+;
+
+izraz: izraz '+' izraz {
+
+}
+| izraz '-' izraz {
+
+}
+| izraz '*' izraz {
+
+}
+| izraz '/' izraz {
+
+}
+| izraz '%' izraz {
+
+}
+| '-' izraz %prec UMINUS {
+  $$ = new UnaryNode($2);
+  delete $2;
+}
+| '(' izraz ')' {
+  $$ = new GroupNode($2);
+  delete $2;
+}
+| konstanta {
+  $$ = $1;
+}
+;
+
+konstanta: broj {
+  $$ = $1;
+}
+| STRING_VAL_T {
+  $$ = new StringConstantNode(*$1);
+  delete $1;
+}
+| ID_T {
+  $$ = new IdentifierNode(*$1);
+  delete $1;
+}
+;
+
+broj: IBROJ_T {
+  $$ = new IntegerConstantNode($1);
+
+}
+| RBROJ_T {
+  $$ = new DoubleConstantNode($1);
+}
+;
+
+%%
+
+int main() {
+  if (yyparse() == 0) {
+    std::cout << "Sve ok" << std::endl;
+  } else {
+    std::cerr << "Sintaksna greska" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+}
+
+// TODO
