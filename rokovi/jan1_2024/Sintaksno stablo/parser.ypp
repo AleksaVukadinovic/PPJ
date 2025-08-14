@@ -45,7 +45,7 @@
 
 program: niz_naredbi {
     root = $1;
-    $1->interpret(st);
+    std::cout << "Sintaksno stablo uspesno napravljeno";
 }
 ;
 
@@ -187,5 +187,7 @@ int main() {
         std::cout << "Greska u parsiranju" << std::endl;
         exit(EXIT_FAILURE);
     }
+    root->interpret(st);
+    delete root;
     exit(EXIT_SUCCESS);
 }
